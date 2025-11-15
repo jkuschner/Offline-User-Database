@@ -3,45 +3,40 @@ package com.example.offlineuserdirectory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.offlineuserdirectory.ui.theme.OfflineUserDirectoryTheme
+import androidx.compose.runtime.collectAsState
+import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import com.example.offlineuserdirectory.UserDatabase
+import com.example.offlineuserdirectory.UserRepository
+import com.example.offlineuserdirectory.RetrofitClient
+import com.example.offlineuserdirectory.UserViewModel
+import com.example.offlineuserdirectory.UserViewModelFactory
+import com.example.offlineuserdirectory.UserDirectoryScreen
 
 class MainActivity : ComponentActivity() {
+
+    private val database by lazy { UserDatabase.getDatabase(applicationContext) }
+    private val repository by lazy {
+        UserRepository(database.userDao(), RetrofitClient.apiService)
+    }
+
+    private val viewModel: UserViewModel by viewModels {
+        UserViewModelFactory(repository)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
         setContent {
-            OfflineUserDirectoryTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+
+            val users by viewModel.users.collectAsState()
+            val searchText by viewModel.searchText.collectAsState()
+
+            UserDirectoryScreen(
+                users = users,
+                searchText = searchText,
+                onSearchTextChanged = viewModel::setSearchText
+            )
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    OfflineUserDirectoryTheme {
-        Greeting("Android")
     }
 }
